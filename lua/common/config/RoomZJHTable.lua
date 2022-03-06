@@ -1,0 +1,20 @@
+RoomZJHTable=
+{
+    {ID=1,GameID=1,RoomID=1,BaseScore=10,MinScore=100,OptTime=10},
+    {ID=2,GameID=1,RoomID=2,BaseScore=50,MinScore=500,OptTime=10},
+    {ID=3,GameID=1,RoomID=3,BaseScore=100,MinScore=1000,OptTime=10},
+    {ID=4,GameID=1,RoomID=4,BaseScore=1000,MinScore=10000,OptTime=10},
+    {ID=5,GameID=1,RoomID=5,BaseScore=2000,MinScore=20000,OptTime=10},
+    {ID=6,GameID=1,RoomID=6,BaseScore=5000,MinScore=50000,OptTime=10},
+    {ID=7,GameID=1,RoomID=7,BaseScore=10000,MinScore=100000,OptTime=15},
+    {ID=8,GameID=1,RoomID=8,BaseScore=50000,MinScore=500000,OptTime=15},
+    {ID=9,GameID=1,RoomID=9,BaseScore=100000,MinScore=1000000,OptTime=15},
+    {ID=10,GameID=1,RoomID=10,BaseScore=500000,MinScore=5000000,OptTime=15},
+    {ID=11,GameID=2,RoomID=1,BaseScore=10,MinScore=100,OptTime=10},
+    {ID=12,GameID=2,RoomID=2,BaseScore=100,MinScore=1000,OptTime=15},
+    {ID=13,GameID=2,RoomID=3,BaseScore=1000,MinScore=10000,OptTime=15},
+    {ID=14,GameID=3,RoomID=1,BaseScore=10,MinScore=100,OptTime=10},
+    {ID=15,GameID=3,RoomID=2,BaseScore=100,MinScore=1000,OptTime=15},
+    {ID=16,GameID=3,RoomID=3,BaseScore=1000,MinScore=10000,OptTime=15},
+    {ID=17,GameID=4,RoomID=1,BaseScore=10,MinScore=100,OptTime=10},
+}

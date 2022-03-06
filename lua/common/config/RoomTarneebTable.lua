@@ -1,0 +1,9 @@
+RoomTarneebTable=
+{
+    {ID=1,Name=tarneeb,Cap=4,BaseScore=1,OptTime=15,Quit={1,3}},
+    {ID=2,Name=tarneeb,Cap=4,BaseScore=2,OptTime=10,Quit={1,3}},
+    {ID=3,Name=tarneeb,Cap=4,BaseScore=3,OptTime=15,Quit={5,10}},
+    {ID=4,Name=tarneeb,Cap=4,BaseScore=4,OptTime=15,Quit={5,10}},
+    {ID=5,Name=tarneeb,Cap=4,BaseScore=5,OptTime=10,Quit={5,10}},
+    {ID=6,Name=tarneeb,Cap=4,BaseScore=6,OptTime=15,Quit={5,10}},
+}
