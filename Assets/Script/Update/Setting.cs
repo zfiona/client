@@ -1,6 +1,12 @@
-﻿using System;
+using System;
 using UnityEngine;
 using GameUtils;
+
+public enum BuildPlatform
+{
+    Android,
+    iOS,
+}
 
 public enum ResPath
 {
@@ -8,6 +14,7 @@ public enum ResPath
     StreamingAssets,
     PersistentData
 }
+
 public class Setting
 {
     //资源加载路径
@@ -17,7 +24,7 @@ public class Setting
     public string buildPath { get; set; }
     public bool isABHash { get; set; }
     public bool delManifest { get; set; }
-    public bool autoAssets { get; set; }
+    public bool createAssets { get; set; }
     //工程运行信息
     public bool isLuaZip { get; set; }
     //打包签名
