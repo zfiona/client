@@ -25,20 +25,13 @@ public class ReporterMessageReceiver : MonoBehaviour
 	void OnHideReporter()
 	{
 		//TO DO : resume your game
-		Root.Instance.Event.enabled = true;
+		//Root.Instance.Event.enabled = true;
 	}
 
 	void OnShowReporter()
 	{
 		//TO DO : pause your game and disable its GUI
-		Root.Instance.Event.enabled = false;
+		//Root.Instance.Event.enabled = false;
 	}
-
-	void OnLog( Reporter.Log log )
-	{
-        //TO DO : put you custom code 
-	}
-
-
 
 }

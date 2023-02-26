@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using GameUtils;
 
 /// <summary>
 /// Init The UI Root
@@ -32,15 +31,18 @@ public class Root : MonoBehaviour
     public Transform fixedRoot;
     public Transform normalRoot;
     public Transform popupRoot;
-    public CanvasScaler canvasScaler;
-    private static int designWidth = 1920;
-    private static int designHeight = 1080;
-    private static int designMatch = 1;
+    private CanvasScaler canvasScaler;
+    public static int designWidth = 776;//1080
+    public static int designHeight = 1680;//1800
+    private static int designMatch = 0;
+    public static bool isLongScreen = false;
 
     static void InitRoot()
     {
         GameObject go = new GameObject("Root");
+        go.tag = go.name;
         go.layer = LayerMask.NameToLayer("UI");
+        go.tag = go.name;
         go.AddComponent<RectTransform>();
         m_Instance = go.AddComponent<Root>();
 
@@ -89,6 +91,9 @@ public class Root : MonoBehaviour
         eventObj.transform.SetParent(go.transform);
         m_Instance.Event = eventObj.AddComponent<EventSystem>();
         eventObj.AddComponent<StandaloneInputModule>();
+
+        //check is long screen
+        isLongScreen = 1f * Screen.height / Screen.width > 1f * designHeight / designWidth;
     }
 
     static GameObject CreateSubCanvasForRoot(Transform root, int sort)
@@ -111,16 +116,9 @@ public class Root : MonoBehaviour
         return go;
     }
 
-    public static void SetScreenOrientation_Protrait()
+    public static void SetWidthOrHeightValue(float value)
     {
-        m_Instance.canvasScaler.matchWidthOrHeight = 0;
-        m_Instance.canvasScaler.referenceResolution = new Vector2(1080, 1920);
-    }
-
-    public static void SetScreenOrientation_Left()
-    {
-        m_Instance.canvasScaler.matchWidthOrHeight = 1;
-        m_Instance.canvasScaler.referenceResolution = new Vector2(1920, 1080);
+        m_Instance.canvasScaler.matchWidthOrHeight = value;
     }
 
     void OnDestroy()

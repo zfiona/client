@@ -181,8 +181,8 @@ namespace NetExtension
                     return;
                 }  
                 short cmd = reader.ReadShort();
-                byte[] message = reader.ReadBytes(msgLen - 2);
-                GameDebug.LogYellow("receive : " + msgLen + " | " + cmd);
+                byte[] message = reader.ReadBytes(msgLen);
+                GameDebug.LogYellow("receive : " + cmd + " | " + msgLen);
                 OnMessageEvent(new NetData(cmd, message));
                 //粘包
                 byte[] unread_bytes = reader.ReadBytes(RemainingBytes());
@@ -206,12 +206,12 @@ namespace NetExtension
                 {
                     ms.Position = 0;
                     BinaryWriter writer = new BinaryWriter(ms);
-                    writer.WriteShort((short)(2 + bytes.Length));
+                    writer.WriteShort((short)bytes.Length);
                     writer.WriteShort(cmd);
                     writer.Write(bytes);
                     writer.Flush();
 
-                    GameDebug.LogYellow("send : " + bytes.Length + " | " + cmd);
+                    GameDebug.LogYellow("send : " + cmd + " | " + bytes.Length);
                     byte[] message = ms.ToArray();
                     netStream.BeginWrite(message, 0, message.Length, new AsyncCallback(OnSendCallBack), curConnectId);
                 }
@@ -239,25 +239,6 @@ namespace NetExtension
                 }
             }
         }
-
-
-        /// <summary>
-        /// 接收到消息
-        /// </summary>
-        /// <param name="ms"></param>
-        //void OnReceivedMessage(MemoryStream ms)
-        //{
-        //    BinaryReader r = new BinaryReader(ms);
-        //    int length = IPAddress.NetworkToHostOrder(r.ReadInt32());
-        //    int cmd = IPAddress.NetworkToHostOrder(r.ReadInt32());
-        //    int uid = IPAddress.NetworkToHostOrder(r.ReadInt32());
-        //    int sid = IPAddress.NetworkToHostOrder(r.ReadInt32());
-        //    byte[] message = r.ReadBytes((int)ms.Length - 16);
-        //    ByteBuffer buffer = new ByteBuffer(message);
-        //    Debug.Log("接收到包体内容=====>" + " cmd; " + cmd.ToString() + " uid; " + uid.ToString() + " sid; " + sid.ToString() + " length; " + message.Length);
-        //    buffer.Remains = message.Length;
-        //    NetworkManager.AddEvent(cmd, new LuaByteBuffer(message));
-        //}
     }
 }
 

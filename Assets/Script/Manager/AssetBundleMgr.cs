@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using GameUtils;
-using System.Collections;
+using Spine.Unity;
+using System.Threading.Tasks;
 
 public class AssetBundleMgr
 {
@@ -42,6 +43,13 @@ public class AssetBundleMgr
         Clear();
         LoadABFileList();
         LoadAssetsMap();
+        delayToPreLoad();
+    }
+
+    private async void delayToPreLoad()
+    {
+        await Task.Delay(200);
+        ResourceMgr.GetInstance.PreLoadUIPrefab();
     }
 
     private void LoadABFileList()
@@ -199,13 +207,15 @@ public class AssetBundleMgr
 #else
                 string dep_hash = dependencies[i];
 #endif
+
                 if (!_bundleCache.ContainsKey(dep_hash))
                 {
+                    
                     string abPath = GetABPathByHash(dep_hash);
-                    var ab = AssetBundle.LoadFromFile(abPath);
+                    AssetBundle ab = AssetBundle.LoadFromFile(abPath);
                     _bundleCache.Add(dep_hash, ab);
                     if (ab == null)
-                        GameDebug.LogError("不存在的AB包：" + abHashName);
+                        GameDebug.LogError("加载AB包报错：" + GetABNameByHash(dep_hash));                     
                 }
             }
         }
@@ -315,6 +325,16 @@ public class AssetBundleMgr
             return null;
         }
         return LoadAssetFromAssetBundle<Material>(abHashName, fullPath);
+    }
+
+    public SkeletonDataAsset LoadSkeletonDataAsset(string fullPath)
+    {
+        string abHashName = GetABHashByName(GetABNameByAssetPath(fullPath));
+        if (string.IsNullOrEmpty(abHashName))
+        {
+            return null;
+        }
+        return LoadAssetFromAssetBundle<SkeletonDataAsset>(abHashName, fullPath);
     }
 }
 

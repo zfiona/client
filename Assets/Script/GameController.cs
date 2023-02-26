@@ -1,26 +1,31 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using GameUtils;
 
 public class GameController : MonoBehaviour
 {
     public static GameController Instance;
+    private static bool created = false;
     void Awake()
     {
+        if (!created)
+            Initialize();
+        else
+            DestroyImmediate(gameObject, true);
+        UIManager.ShowPage(new UILoadGame(), null);
+    }
+
+    private void Initialize()
+    {
+        created = true;
         Instance = this;
         QualitySettings.SetQualityLevel(3);
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
-        Application.targetFrameRate = 30;
+        //Application.targetFrameRate = 30;
         DontDestroyOnLoad(gameObject);
-        CheckDebug();
-        CheckRes();
-    }
-    
 
-    void Start()
-    {
-        GameDebug.LogPurple(Tool.GetDeviceName() + " ：" + Tool.GetDeviceUID());
-        UIManager.ShowPage(new UILoadGame(),null);
+        CheckDebug();
+        CheckResource();
+        gameObject.TryGetComponent<LocalDataMgr>();
     }
     
     void CheckDebug()
@@ -29,10 +34,10 @@ public class GameController : MonoBehaviour
         {
             GameDebug.logEnable = false;
         }
-        GameDebug.Log(Application.persistentDataPath);
+        GameDebug.LogPurple(Application.persistentDataPath);
     }
 
-    void CheckRes()
+    void CheckResource()
     {
         string[] versions = Application.version.Split('.');
         if (versions[versions.Length-1] == "0")

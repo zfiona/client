@@ -24,7 +24,7 @@ public enum ProgressState
 public class AssetUpdater
 {
     public static string Apk_Name = "tmp.apk";
-    public static string Config_Name = "version.json";
+    public static string Config_Name = "version.json"; //"3ef5e0d96a4566e6853165551eb193b0";
     public static string Lua_Name = "luazip";
     public static string Manifest_Name = "manifest";
     public const string Lua_Src_Path = "lua";
@@ -43,43 +43,62 @@ public class AssetUpdater
     private Config localConfig;
     private Config remoteConfig;
 
-    private int assetIndex = 0;
     public void StartUpdate(Action<ProgressState,float> callback)
     {
         mCallback = callback;
         _fileUtils = FileUtils.ins;
         localConfig = AppConst.config;
         mCallback.Invoke(ProgressState.Checking, 0);
-
-        assetIndex = PlayerPrefs.GetInt("NetAssetIndex", 0);
-        StartDownload();
+        DownloadConfig();
     }
 
-    public void StartDownload()
+    public void DownloadConfig()
     {
-        string url = localConfig.GetPath(assetIndex);
+        string url = localConfig.GetAbPath();
         if (string.IsNullOrEmpty(url))
         {
-            assetIndex = 0;
             mCallback.Invoke(ProgressState.CheckError, 0);
         }
         else
         {
-            url += Config_Name;
+            url += FileUtils.ins.GetMD5FromString(Config_Name).ToLower();
             HttpRequest request = new HttpRequest(OnConfigDone);
             request.Get(url);
         }
+    }
+
+    public bool IsLastCompleted()
+    {
+        foreach (var item in localConfig.assets)
+        {
+#if AssetBundleHash
+            string path = _fileUtils.getPresistentPath(true) + item.md5;
+#else
+            string path = _fileUtils.getPresistentPath(true) + item.path;
+#endif
+            if (File.Exists(path))
+            {
+                long length = new FileInfo(path).Length;
+                if (length < item.length)
+                    return false;
+            }
+            else
+            {
+                return false;
+            }
+
+        }
+        return true;
     }
 
     private void OnConfigDone(string api,string text)
     {
         if (string.IsNullOrEmpty(text))
         {
-            assetIndex++;
-            StartDownload();
+            //DownloadConfig();
+            mCallback.Invoke(ProgressState.CheckError, 0);
             return;
         }
-        PlayerPrefs.SetInt("NetAssetIndex", assetIndex);
         remoteConfig = FileUtils.loadObjectFromJson<Config>(text);
         AppConst.config = remoteConfig;
 
@@ -87,10 +106,10 @@ public class AssetUpdater
         if (state == Config.VersionState.bigUpdate)
             mCallback.Invoke(ProgressState.BigVersion, 0);
         else
-            CheckDownload();
+            DownloadAssets();
     }
 
-    public void CheckDownload()
+    public void DownloadAssets()
     {
         curbytes = 0;
         totalBytes = 0;
@@ -150,7 +169,7 @@ public class AssetUpdater
             mCallback.Invoke(ProgressState.Checked, totalBytes);
             _loadBundleIndex = 0;
             HttpLoader loader = new HttpLoader(OnDone, OnProgress);
-            loader.StartDownloadAll(_updateBundles, remoteConfig.GetPath(assetIndex), _fileUtils.getPresistentPath(true));
+            loader.StartDownloadAll(_updateBundles, remoteConfig.GetAbPath(), _fileUtils.getPresistentPath(true));
         }
     }
 
@@ -166,7 +185,7 @@ public class AssetUpdater
         curbytes += data.Length;
         if (_loadBundleIndex == _updateBundles.Count)
         {
-            string storgePath = _fileUtils.getPresistentPath(true) + Config_Name;
+            string storgePath = _fileUtils.getPresistentPath(true) + FileUtils.ins.GetMD5FromString(Config_Name).ToLower();
             FileUtils.saveObjectToJsonFile(remoteConfig, storgePath, true);
             mCallback.Invoke(ProgressState.Updated, totalBytes);
         }
@@ -180,12 +199,13 @@ public class AssetUpdater
     public void StartDownloadApk()
     {
         mCallback.Invoke(ProgressState.BigUpdating, 0);
-        Apk_Name = Apk_Name.Replace("tmp", AppConst.config.version);
-        string url = AppConst.config.appUrl;
-        string path = _fileUtils.getPresistentPath(true) + Apk_Name;
+        string url = AppConst.config.GetApkPath();
+        string path = Application.persistentDataPath + "/" + Apk_Name;
+        if (File.Exists(path))
+            File.Delete(path);
         
         HttpLoader loader = new HttpLoader(OnDoneApk, OnProgressApk);
-        loader.timeOut = 240;
+        loader.timeOut = 300;
         loader.StartDownload(url, path);
     }
 

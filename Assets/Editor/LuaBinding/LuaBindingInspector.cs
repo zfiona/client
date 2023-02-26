@@ -15,9 +15,9 @@ public class LuaBindingInspector : Editor
 
     private SerializedObject binding;
 
-    LuaBinding mUlua;
+    LuaBinding mLua;
     GameObject mGo;
-    string mLastLuaFile;
+   // string mLastLuaFile;
 
     bool mAdd = false;
     void OnEnable()
@@ -97,7 +97,7 @@ public class LuaBindingInspector : Editor
         if (mVariables == null)
             mVariables = binding.FindProperty("mVariables");
 
-        mUlua = target as LuaBinding;
+        mLua = target as LuaBinding;
         EditorTools.DrawSeparator();
         BindAttrValue();
         //EditorTools.DrawSeparator();
@@ -105,19 +105,26 @@ public class LuaBindingInspector : Editor
         binding.ApplyModifiedProperties();
     }
 
-    public bool KeyIsNumber(string key)
+    private bool KeyIsNumber(string key)
     {
         var reg = new System.Text.RegularExpressions.Regex("^[0-9]+$");//判断是不是数据，要不是就表示没有选择，则从隐藏域里读出来
         System.Text.RegularExpressions.Match ma = reg.Match(key);
         if (ma.Success) EditorUtility.DisplayDialog("错误", "变量名不能为纯数字", "确定");
         return ma.Success;
     }
+    private bool KeyHasEmpty(string key)
+    {
+        var reg = new System.Text.RegularExpressions.Regex("\\s+");
+        System.Text.RegularExpressions.Match ma = reg.Match(key);
+        if (ma.Success) EditorUtility.DisplayDialog("错误", "变量名不能有空格", "确定");
+        return ma.Success;
+    }
 
-    public bool KeyIsExit(string key)
+    private bool KeyIsExit(string key)
     {
         for (int i = 0; i < mVariables.arraySize; i++)
         {
-            var val = mUlua.mVariables[i];
+            var val = mLua.mVariables[i];
             if(val.name == key)
             {
                 EditorUtility.DisplayDialog("错误", "变量名已存在，位置：" + (i+1), "确定");
@@ -136,7 +143,7 @@ public class LuaBindingInspector : Editor
         binding.Update();
         string reName = "";
         bool changed = false;
-        List<LuaVariable> vals = new List<LuaVariable>(mUlua.mVariables);
+        List<LuaVariable> vals = new List<LuaVariable>(mLua.mVariables);
 
         if (EditorTools.DrawHeader("绑定变量"))
         {
@@ -147,7 +154,7 @@ public class LuaBindingInspector : Editor
             {
                 if (i % 2 == 0) GUI.backgroundColor = Color.cyan;
                 else GUI.backgroundColor = Color.white;
-                var val = mUlua.mVariables[i];
+                var val = mLua.mVariables[i];
 
                 if (val.val == null)
                 {
@@ -173,7 +180,7 @@ public class LuaBindingInspector : Editor
                 SerializedProperty mVal = variable.FindPropertyRelative("variable");
                 var comps = GetComponents(val.gameObject);
 
-                int index = 0;
+                int index;
                 var names = GetTypeNames(comps, mType.stringValue, out index);
                 int choice = 0;
                 choice = EditorGUILayout.Popup(index, names, GUILayout.Width(100));
@@ -208,7 +215,7 @@ public class LuaBindingInspector : Editor
                     //mUlua.mVariables.Remove(val);
                     mVariables.DeleteArrayElementAtIndex(i);
 
-                    EditorTools.SetDirty(mUlua.gameObject);
+                    EditorTools.SetDirty(mLua.gameObject);
                     EditorUtility.UnloadUnusedAssetsImmediate();
                     break;
                 }
@@ -220,7 +227,7 @@ public class LuaBindingInspector : Editor
                 EditorTools.EndContents();
             }
             GUI.backgroundColor = Color.white;
-            vals = new List<LuaVariable>(mUlua.mVariables);
+            vals = new List<LuaVariable>(mLua.mVariables);
             for (int j = 0; j < removeList.Count; j++)
             {
                 vals.Remove(removeList[j]);
@@ -228,7 +235,7 @@ public class LuaBindingInspector : Editor
             }
             removeList.Clear();
 
-            mUlua.mVariables = vals.ToArray();
+            mLua.mVariables = vals.ToArray();
             for (int i = 0; i < vals.Count; i++)
             {
                 vals[i] = null;
@@ -269,7 +276,7 @@ public class LuaBindingInspector : Editor
             if (mGo)
             {
                 string _name = mGo.name;
-                if (KeyIsNumber(_name) || KeyIsExit(_name))
+                if (KeyHasEmpty(_name) || KeyIsNumber(_name) || KeyIsExit(_name))
                 {
                     mGo = null;
                 }
@@ -278,18 +285,17 @@ public class LuaBindingInspector : Editor
                     var val = new LuaVariable();
                     val.name = _name;
                     val.type = "GameObject";
-                    //val.gameObject = mGo;
                     val.variable = mGo;
-                    vals = new List<LuaVariable>(mUlua.mVariables);
+                    vals = new List<LuaVariable>(mLua.mVariables);
                     vals.Add(val);
 
-                    mUlua.mVariables = vals.ToArray();
+                    mLua.mVariables = vals.ToArray();
                     for (int i = 0; i < vals.Count; i++)
                     {
                         vals[i] = null;
                     }
                     vals.Clear();
-                    EditorTools.SetDirty(mUlua.gameObject);
+                    EditorTools.SetDirty(mLua.gameObject);
                     mAdd = true;
                     mGo = null;
                 }               
@@ -301,7 +307,7 @@ public class LuaBindingInspector : Editor
         }
         if (changed)
         {
-            EditorTools.SetDirty(mUlua.gameObject);
+            EditorTools.SetDirty(mLua.gameObject);
         }
     }
     /// <summary>

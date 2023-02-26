@@ -1,4 +1,5 @@
 ﻿using DG.Tweening;
+using DG.Tweening.Core;
 using System;
 using System.Collections.Generic;
 using XLua;
@@ -24,7 +25,8 @@ namespace XLuaExtension
             typeof(TweenExtensions),
             typeof(TweenSettingsExtensions),
             typeof(ShortcutExtensions),
-            typeof(ShortcutExtensions46),
+            typeof(DOTweenModuleUI),
+            //typeof(ShortcutExtensions46),
         };
 
         [CSharpCallLua]
@@ -32,6 +34,8 @@ namespace XLuaExtension
         {
             typeof(TweenCallback),
             typeof(TweenCallback<>),
+            typeof(DOSetter<float>),
+            typeof(DOGetter<float>),
         };
     }
 }

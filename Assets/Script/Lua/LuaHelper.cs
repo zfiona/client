@@ -47,7 +47,7 @@ public static class LuaHelper
             TextAsset textAsset = AssetBundleMgr.Instance.LoadTextAsset(path);
             if (textAsset == null)
             {
-                GameDebug.LogError("文件加载失败:"+ path);
+                GameDebug.LogError("文件加载失败:"+ path);            
             }
             else
             {

@@ -20,7 +20,7 @@ public class UIManager
 
     public static bool IsPageActive(string pageName)
     {
-        if (allPages[pageName] == null)
+        if(!allPages.ContainsKey(pageName))
             return false;
         return allPages[pageName].isActive();
     }
@@ -44,7 +44,7 @@ public class UIManager
 
     [BlackList]
     public static void ShowPage(Page page, object pageData)
-    {
+    {        
         if (page.isActive())
             page.Refresh(pageData);
         else
@@ -94,7 +94,6 @@ public class UIManager
 
     public static void ClosePage(string pageName)
     {
-
         if (allPages != null && allPages.ContainsKey(pageName))
         {
             ClosePage(allPages[pageName]);

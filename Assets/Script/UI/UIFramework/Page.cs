@@ -20,10 +20,6 @@ public enum UIAnim
     RightToLeft,
     DownToUp,
     MiddleAppear,
-    /// <summary>
-    /// 顶端向下动画
-    /// </summary>
-    TopToDown,
 }
 #endregion
 
@@ -97,7 +93,7 @@ public abstract class Page
     public static readonly float animTime = 0.3f;
     private readonly int offsetX = 900;
     private readonly int offsetY = 500;
-    private readonly int mainToX = -210;
+    //private readonly int mainToX = -210;
     /// <summary>
     /// 出现动画
     /// </summary>
@@ -110,7 +106,7 @@ public abstract class Page
                     //当前界面
                     float fromX = Screen.width + offsetX;
                     transform.localPosition = new Vector3(fromX, 0, 0);
-                    transform.DOLocalMoveX(0, animTime).SetEase(Ease.OutQuad);
+                    transform.DOLocalMoveX(0, animTime).SetUpdate(true).SetEase(Ease.OutQuad);
                     //主界面
                     //Page main = UIManager.GetPage(AppConst.MainUI);
                     //if (main != null)
@@ -125,7 +121,7 @@ public abstract class Page
                 {
                     float fromY = (Screen.height + offsetY) * -1;
                     transform.localPosition = new Vector3(0, fromY);
-                    transform.DOLocalMoveY(0, animTime).SetEase(Ease.OutQuad);
+                    transform.DOLocalMoveY(0, animTime).SetUpdate(true).SetEase(Ease.OutQuad);
                 }
                 break;
             case UIAnim.MiddleAppear:
@@ -133,25 +129,14 @@ public abstract class Page
                     Transform frame = transform.Find("frame");
                     if (frame != null)
                     {
-                        frame.localScale = Vector3.one * 0.8f;
-                        frame.DOScale(1, animTime).SetEase(Ease.OutBack);
-                    }
-                }
-                break;
-            case UIAnim.TopToDown:
-                {
-                    var  frameRect = transform.Find("frame").GetComponent<RectTransform>();
-                    if (frameRect != null)
+                        frame.localScale = Vector3.one * 0.2f;
+                        frame.DOScale(1, animTime).SetUpdate(true).SetEase(Ease.OutBack);
+                    } 
+                    else
                     {
-                        float h = frameRect.sizeDelta.y + 100;
-                        var pos = frameRect.anchoredPosition;
-                        pos.y = h;
-                        frameRect.anchoredPosition = pos;
-                        //top stretch
-                        //pivot (0.5,1)
-                        frameRect.DOAnchorPos(Vector2.zero, animTime).SetEase(Ease.OutQuad);     
+                        transform.localScale = Vector3.one * 0.2f;
+                        transform.DOScale(1, animTime).SetUpdate(true).SetEase(Ease.OutBack);
                     }
-
                 }
                 break;
             default:
@@ -170,7 +155,7 @@ public abstract class Page
                 {   //当前界面
                     float ToX = Screen.width + offsetX;
                     transform.localPosition = Vector3.zero;
-                    transform.DOLocalMoveX(ToX, animTime).SetEase(Ease.InQuad).OnComplete(callback);
+                    transform.DOLocalMoveX(ToX, animTime).SetEase(Ease.InQuad).SetUpdate(true).OnComplete(callback);
                     //主界面
                     //Page main = UIManager.GetPage(AppConst.MainUI);
                     //if (main != null)
@@ -183,26 +168,16 @@ public abstract class Page
                 {
                     float ToY = (Screen.height + offsetY) * -1;
                     transform.localPosition = Vector3.zero;
-                    transform.DOLocalMoveY(ToY, animTime).SetEase(Ease.InQuad).OnComplete(callback);
+                    transform.DOLocalMoveY(ToY, animTime).SetEase(Ease.InQuad).SetUpdate(true).OnComplete(callback);
                 } break;
             case UIAnim.MiddleAppear:
-                {  //Transform frame = transform.Find("frame");
-                   //if (frame != null)
-                   //    frame.DOScale(0.8f, animTime).SetEase(Ease.InBack).OnComplete(callback);
-                    callback();
-                } break;
-            case UIAnim.TopToDown:
                 {
-                    var frameRect = transform.Find("frame").GetComponent<RectTransform>();
-                    float h = frameRect.sizeDelta.y + 100;
-                    if (frameRect != null)
-                    {
-                        //top stretch
-                        //pivot (0.5,1)
-                        frameRect.DOAnchorPos(new Vector2(0,h), animTime).SetEase(Ease.OutQuad).OnComplete(callback);
-                    }
-                }
-                break;
+                    Transform frame = transform.Find("frame");
+                    if (frame != null)
+                        frame.DOScale(0.2f, animTime).SetEase(Ease.InBack).SetUpdate(true).OnComplete(callback);
+                    else
+                        transform.DOScale(0.2f, animTime).SetEase(Ease.InBack).SetUpdate(true).OnComplete(callback);
+                } break;
             default:
                 {
                     callback();
@@ -310,19 +285,26 @@ public abstract class Page
         this.gameObject = ui;
         this.transform = ui.transform;
         if (type == UIType.Normal)
-        {
             ui.transform.SetParent(Root.Instance.normalRoot, false);
-        }
         else if (type == UIType.Fixed)
-        {
             ui.transform.SetParent(Root.Instance.fixedRoot, false);
-        }
         else if (type == UIType.PopUp)
-        {
             ui.transform.SetParent(Root.Instance.popupRoot, false);
-        }
         ui.transform.localPosition = Vector3.zero;
         ui.transform.localScale = Vector3.one;
+
+        if (Root.isLongScreen)
+        {
+            Transform bg = ui.transform.Find("background");
+            if (bg)
+            {
+                RectTransform rf = bg.GetComponent<RectTransform>();
+                rf.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Left, 0, 0);
+                rf.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 0, 0);
+                rf.anchorMin = Vector2.zero;
+                rf.anchorMax = Vector2.one;
+            }
+        }
     }
     #endregion
 }//Page

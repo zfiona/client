@@ -10,7 +10,7 @@ namespace NetExtension
 {
     public class HttpBundle
     {
-        private const string _CACHE = "BundleCache";
+        private const string _CACHE = "bundleCache";
         private static string cachePath = Application.persistentDataPath + "/" + _CACHE + "/";
         public static int timeOut = 10;
         private static AssetBundle mAssetBundle;

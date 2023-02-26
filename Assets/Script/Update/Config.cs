@@ -1,59 +1,76 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
-using System;
+﻿using System.Collections.Generic;
 using GameUtils;
+using System;
 
 public class Config
 {
-    public string version { get; set; } //版本号1.1
-    public string appUrl { get; set; } //下载包地址
-    public string kefuUrl { get; set; } //客服地址
-    public List<string> assetUrls { get; set; }//资源地址
-    public List<string> apiUrls { get; set; } //web地址
+    public string version { get; set; } //版本号1.1.1
     public int zoneId { get; set; } //区服id
-    public string appName { get; set; }//app名
+    public string apiUrl { get; set; }//web地址
+    public string assetUrl { get; set; }//资源地址
+    public int logLevel { get; set; } //日志级别(0,1,2)
 
     public List<FileItem> assets { get; set; } //热更资源信息
 
-    public VersionState CompareVersion(string remote)
+    public VersionState CompareVersion(string remoteVersion)
     {
         string[] arg1 = version.Split('.');
-        string[] arg2 = remote.Split('.');
-        if (arg1[0] != arg2[0])
+        string[] arg2 = remoteVersion.Split('.');
+        if (arg1.Length != arg2.Length)
             return VersionState.bigUpdate;
-        else
-            return VersionState.hotUpdate;
-    }
-    
-    public int GetNetApis()
-    {
-        if (apiUrls == null)
-            return 0;
-        return apiUrls.Count;
+        for (int i = 0; i < arg1.Length - 1; i++)
+        {
+            if (arg1[i] != arg2[i])
+                return VersionState.bigUpdate;
+        }
+        return VersionState.hotUpdate;
     }
 
-    public string GetPath(int index,string gameName="")
+    public string GetApkPath()
     {
-        string OriUrl = "";
-        if (assetUrls == null || index >= assetUrls.Count)
-            return OriUrl;
-        
+        return assetUrl.Replace("/update", "/download/im.apk");
+    }
+
+    public string GetAbPath(string gameName = "")
+    {
+        GameDebug.Log(assetUrl);
+        string OriUrl;
         if (string.IsNullOrEmpty(gameName))
-            OriUrl = $"{assetUrls[index]}/{zoneId}/{appName}";
+            OriUrl = $"{assetUrl}/Hall";
         else
-            OriUrl = $"{assetUrls[index]}/{zoneId}/{gameName}";
+            OriUrl = $"{assetUrl}/{gameName}";
 
         OriUrl = $"{OriUrl}/{FileUtils.ins.getRuntimePlatform()}/";
         return OriUrl;
     }
 
+    public string GetVersion()
+    {
+        //if (version.Split('.').Length == 2)
+        //    return "version: 1." + version;
+        return "version: " + version;
+    }
+
+    public int GetBundleVersionCode()
+    {
+        string[] versions = version.Split('.');
+        if (versions.Length == 2)
+            return int.Parse(versions[0]);
+        else
+        {
+            int a = int.Parse(versions[0]);
+            int b = int.Parse(versions[1]);
+            b = Math.Max(b, 9);
+            return Math.Max((a - 1) * 10 + b, 1);
+        }
+    }
 
     public enum VersionState
     {
         hotUpdate,
         bigUpdate,
     }
-    
+
 }
 public class FileItem
 {

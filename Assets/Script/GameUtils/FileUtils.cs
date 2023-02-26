@@ -8,12 +8,6 @@ using UnityEngine;
 
 namespace GameUtils
 {
-    public enum BuildPlatform
-    {
-        Android,
-        iOS,
-    }
-
     public class FileUtils
     {
         private string streamingAssetsPath;
@@ -141,7 +135,7 @@ namespace GameUtils
 
         public bool IsConfigExist()
         {
-            string path = getPresistentPath(true) + AssetUpdater.Config_Name;
+            string path = getPresistentPath(true) + GetMD5FromString(AssetUpdater.Config_Name).ToLower();
             return isFileExist(path);
         }
 
@@ -198,10 +192,10 @@ namespace GameUtils
         /// <param name="fileName"></param>
         /// <returns></returns>
         public string getString(string fileName)
-        {
-            //GameDebug.Log(fileName);
+        {       
             if (!isFileExist(fileName))
             {
+                Debug.Log("File not Exist");
                 return null;
             }
 #if !UNITY_EDITOR && UNITY_ANDROID
@@ -209,16 +203,6 @@ namespace GameUtils
 #else
             return File.ReadAllText(fileName, Encoding.UTF8);
 #endif
-        }
-        public string getString(string path, string fileName)
-        {
-            if (!path.EndsWith("/")) path += "/";
-            return getString(path + fileName);
-        }
-        public byte[] getBytes(string path, string fileName)
-        {
-            if (!path.EndsWith("/")) path += "/";
-            return getBytes(path + fileName);
         }
 
         /// <summary>
@@ -240,6 +224,7 @@ namespace GameUtils
             return File.ReadAllBytes(fileName);
 #endif
         }
+
         public bool Move(string src, string target)
         {
             try
@@ -262,32 +247,38 @@ namespace GameUtils
             }
         }
 
-        public void CopyFile_Bytes(string sourcesfile, string targetfile)
+        public bool isFileExist(string filePath)
         {
-            byte[] fileBytes = null;
+#if !UNITY_EDITOR && UNITY_ANDROID
+            return isFileExistsAndroid(filePath);
+#else
+            return File.Exists(filePath);
+#endif
+        }
+
+        public bool isDirectoryExist(string dir)
+        {
+            return Directory.Exists(dir);
+        }
+
+        public void createDirectory(string path)
+        {
+            if (!isDirectoryExist(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+        }
+
+        public void copyFile(string sourcesfile, string targetfile)
+        {
             if (!isFileExist(sourcesfile))
             {
                 return;
             }
 #if !UNITY_EDITOR && UNITY_ANDROID
-      
-            fileBytes = getBytesAndroid(sourcesfile);
-            writeBytes(targetfile,fileBytes);
-            return ;
+            copyFileAndroid(sourcesfile,targetfile);
 #else
-
-            fileBytes = File.ReadAllBytes(sourcesfile);
-            writeBytes(targetfile, fileBytes);
-            return;
-#endif
-        }
-
-        public void copyFile(string sourcepath, string targetpath)
-        {
-#if !UNITY_EDITOR && UNITY_ANDROID
-            copyFileAndroid(sourcepath,targetpath);
-#else
-            copyNormal(sourcepath, targetpath);
+            copyNormal(sourcesfile, targetfile);
 #endif
         }
 
@@ -296,7 +287,6 @@ namespace GameUtils
             try
             {
                 string path = Path.GetDirectoryName(targetpath);
-                //Debug.Log(path);
                 createDirectory(path);
                 removeFile(@targetpath);
                 File.Copy(@sourcepath, @targetpath);
@@ -308,30 +298,6 @@ namespace GameUtils
             }
         }
 
-        /// <summary>
-        /// 判断文件是否存在
-        /// </summary>
-        /// <param name="filePath"></param>
-        /// <returns></returns>
-        public bool isFileExist(string filePath)
-        {
-#if !UNITY_EDITOR && UNITY_ANDROID
-            return isFileExistsAndroid(filePath);
-#else
-            return File.Exists(filePath);
-#endif
-        }
-
-        /// <summary>
-        /// 判断目录是否存在
-        /// </summary>
-        /// <param name="dir"></param>
-        /// <returns></returns>
-        public bool isDirectoryExist(string dir)
-        {
-            return Directory.Exists(dir);
-        }
-
         public void copyDir(string srcDir, string tarDir)
         {
 #if !UNITY_EDITOR && UNITY_ANDROID
@@ -340,6 +306,7 @@ namespace GameUtils
             copyDirNormal(srcDir, tarDir);
 #endif
         }
+
         private void copyDirNormal(string srcDir, string tarDir)
         {
             DirectoryInfo source = new DirectoryInfo(srcDir);
@@ -372,35 +339,6 @@ namespace GameUtils
             }
         }
 
-        
-        private string getLinuxPath(string path)
-        {
-#if UNITY_EDITOR
-            return Regex.Replace(path, "\\\\", "/");
-#else
-        return path;
-#endif
-        }
-        public void movePath(string oldPath, string newPath)
-        {
-            oldPath = getLinuxPath(oldPath);
-            newPath = getLinuxPath(newPath);
-            ForEachDirectory(oldPath, (path) =>
-            {
-                path = getLinuxPath(path);
-                var p = path.Replace(oldPath, newPath);
-                var dir = Path.GetDirectoryName(newPath);
-                createDirectory(dir);
-                //File.Move(path, p);
-                CopyFile_Bytes(path, p);
-            });
-        }
-
-        /// <summary>
-        /// 删除目录
-        /// </summary>
-        /// <param name="dir"></param>
-        /// <returns></returns>
         public bool removeDirectory(string dir)
         {
             if (isDirectoryExist(dir))
@@ -411,11 +349,6 @@ namespace GameUtils
             return false;
         }
 
-        /// <summary>
-        /// 删除文件
-        /// </summary>
-        /// <param name="file"></param>
-        /// <returns></returns>
         public bool removeFile(string file)
         {
             if (isFileExist(file))
@@ -446,33 +379,7 @@ namespace GameUtils
                 throw e;
             }
         }
-        private void Write(FileStream fs, byte[] data)
-        {
-            fs.Write(data, 0, data.Length);
-        }
-        public bool writeFileStream(string path, List<byte[]> dataes)
-        {
-            createDirectory(Path.GetDirectoryName(path));
-            using (FileStream fs = new FileStream(path, System.IO.FileMode.Append))
-            {
-                for (int i = 0; i < dataes.Count; ++i)
-                    Write(fs, dataes[i]);
-            }
-            return true;
-        }
-        public bool writeFileStream(string dir, string filename, List<byte[]> dataes)
-        {
-            return writeFileStream(Path.Combine(dir, filename), dataes);
-        }
-
-        public void createDirectory(string path)
-        {
-            if (!isDirectoryExist(path))
-            {
-                Directory.CreateDirectory(path);
-            }
-        }
-
+        
         public void clearPath(string path)
         {
             DirectoryInfo info = new DirectoryInfo(path);
@@ -492,60 +399,28 @@ namespace GameUtils
             }
         }
 
-        public void ForEachDirectory(string path, Action<string> callBack)
-        {
-            ForEachDirectory(path, "*", callBack);
-        }
-
-        /// <summary>
-        /// 遍历文件夹下所有文件。
-        /// </summary>
-        /// <param name="path"></param>
-        /// <param name="searchPattern"></param>
-        /// <param name="callBack"></param>
-        public void ForEachDirectory(string path, string searchPattern, Action<string> callBack)
-        {
-            DirectoryInfo info = new DirectoryInfo(path);
-            if (!info.Exists)
-            {
-                return;
-            }
-            FileInfo[] files = info.GetFiles(searchPattern, SearchOption.AllDirectories);
-            for (int i = 0; i < files.Length; i++)
-            {
-                Debug.Log(files[i].FullName);
-                callBack(getLinuxPath(files[i].FullName));
-            }
-
-        }
-
         /// <summary>
         /// 获得目录下所有文件路径
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        public List<string> getAllFileInPath(string path)
-        {
-            return getAllFileInPathWithSearchPattern(path, null);
-        }
-
-        /// <summary>
-        /// 获得目录下所有后缀为{searchPattern}的文件路径
-        /// </summary>
-        /// <param name="path"></param>
-        /// <param name="searchPattern"></param>
-        /// <returns></returns>
-        public List<string> getAllFileInPathWithSearchPattern(string path, string searchPattern)
+        public List<string> getAllFileInPath(string path, string searchPattern="*")
         {
             List<string> list = new List<string>();
-            ForEachDirectory(path, searchPattern, (string file) =>
+            DirectoryInfo info = new DirectoryInfo(path);
+            if (!info.Exists)
             {
-                list.Add(file);
-            });
-
+                return list;
+            }
+            FileInfo[] files = info.GetFiles(searchPattern, SearchOption.AllDirectories);
+            for (int i = 0; i < files.Length; i++)
+            {
+                list.Add(files[i].FullName);
+            }
             return list;
         }
 
+        
         public string getRuntimePlatform()
         {           
             string pf = "";
@@ -560,17 +435,6 @@ namespace GameUtils
         }
 
 #if !UNITY_EDITOR && UNITY_ANDROID
-        private AndroidJavaClass _helper;
-        private AndroidJavaClass helper
-        {
-            get
-            {
-                if (_helper == null) 
-                    _helper = new AndroidJavaClass("com.yixun.tools.FileUtil");
-                return _helper;
-            }
-        }
-
         private void copyFileAndroid(string path, string desPath)
         {
             if (path.IndexOf(streamingAssetsPath) > -1)
@@ -583,7 +447,7 @@ namespace GameUtils
             {
                 copyNormal(path,desPath);
             }
-            helper.CallStatic("copyFileFromAssets", path, desPath);
+            SdkMgr.Instance.copyFileFromAssets(path, desPath);
         }
 
         private void copyDirAndroid(string path, string desPath)
@@ -598,7 +462,7 @@ namespace GameUtils
             {
                 copyDirNormal(path,desPath);
             }
-            helper.CallStatic("copyFilesFromAssets", path, desPath);
+            SdkMgr.Instance.copyFileFromAssets(path, desPath);
         }
         
         private byte[] getBytesAndroid(string path)
@@ -611,7 +475,7 @@ namespace GameUtils
             {
                 return File.ReadAllBytes(path);
             }
-            return helper.CallStatic<byte[]>("getBytes", path);
+            return SdkMgr.Instance.getBytes(path);
         }
         private string getStringAndroid(string path)
         {
@@ -623,7 +487,7 @@ namespace GameUtils
             {
                 return File.ReadAllText(path);
             }
-            return helper.CallStatic<string>("getString", path);
+            return SdkMgr.Instance.getString(path);
         }
         private bool isFileExistsAndroid(string path)
         {
@@ -635,7 +499,7 @@ namespace GameUtils
             {
                 return File.Exists(path);
             }
-            return helper.CallStatic<bool>("isFileExists", path);
+            return SdkMgr.Instance.isFileExists(path);
         }
 #endif
 

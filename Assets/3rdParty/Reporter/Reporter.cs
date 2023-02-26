@@ -1,11 +1,11 @@
-//unity before version 5 is old
-//#define USE_OLD_UNITY 
-
 using UnityEngine;
-//using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
+using System.IO;
+using System.Text.RegularExpressions;
+using System;
+using System.Text;
 
 [System.Serializable]
 public class Images
@@ -81,8 +81,6 @@ public class Reporter : MonoBehaviour {
 		public string  		condition ;
 		public string  		stacktrace ;
 		public int 			sampleId ;
-		//public string   objectName="" ;//object who send error
-		//public string   rootName =""; //root of object send error
 
 		public Log CreateCopy()
 		{
@@ -92,7 +90,7 @@ public class Reporter : MonoBehaviour {
 		{
 			return 	(float)(sizeof(int) + 
 			        sizeof(_LogType) +
-			        condition.Length * sizeof( char )+
+					condition.Length * sizeof( char )+
 			        stacktrace.Length * sizeof( char )+
 					sizeof( int ) );
 		}
@@ -113,8 +111,7 @@ public class Reporter : MonoBehaviour {
 	[HideInInspector]
 	//show hide In Game Logs
 	public bool show = false ;
-    GameObject eventSystem;
-    private bool canRay = true;
+    private bool canRay = false;
     //collapse logs
     bool collapse ;
 	//to deside if you want to clean logs for new loaded scene
@@ -160,7 +157,6 @@ public class Reporter : MonoBehaviour {
 	bool showFpsButton = true;
 	bool showSearchText = true;
 	
-	string buildDate;
 	string logDate ;
 	float  logsMemUsage;
 	float  graphMemUsage ;
@@ -279,18 +275,7 @@ public class Reporter : MonoBehaviour {
 	{ 
 		
 	}
-    void EnableEventSystem()
-    {
-        if (!eventSystem)
-        {
-            eventSystem = GameObject.Find("Root/EventSystem");
-        }
-        if (eventSystem)
-        {
-            canRay = !canRay;
-            eventSystem.SetActive(canRay);
-        }
-    }
+
 	void addSample(){
 
 		Sample sample = new Sample();
@@ -323,13 +308,8 @@ public class Reporter : MonoBehaviour {
             currentScene = SceneManager.GetActiveScene().name;
 
             DontDestroyOnLoad( gameObject );
-#if USE_OLD_UNITY
-			Application.RegisterLogCallback (new Application.LogCallback (CaptureLog));
-			Application.RegisterLogCallbackThreaded (new Application.LogCallback (CaptureLogThread));
-#else
 			//Application.logMessageReceived += CaptureLog ;
 			Application.logMessageReceivedThreaded += CaptureLogThread ;
-#endif
 			created = true ;
 			//addSample();
 		}
@@ -375,7 +355,6 @@ public class Reporter : MonoBehaviour {
 
 
 		currentView = (ReportView)PlayerPrefs.GetInt( "Reporter_currentView" , 1);
-		show 		= (PlayerPrefs.GetInt( "Reporter_show" )==1)?true:false;
 		collapse 	= (PlayerPrefs.GetInt( "Reporter_collapse" )==1)?true:false;
 		clearOnNewSceneLoaded = (PlayerPrefs.GetInt( "Reporter_clearOnNewSceneLoaded" )==1)?true:false;
 		showTime 	= (PlayerPrefs.GetInt( "Reporter_showTime" )==1)?true:false;
@@ -399,22 +378,14 @@ public class Reporter : MonoBehaviour {
 
 
 		initializeStyle();
-
 		Initialized = true ;
-
-		if( show ){
-			doShow();
-		}
 
 		deviceModel = SystemInfo.deviceModel.ToString() ;
 		deviceType  = SystemInfo.deviceType.ToString() ;
 		deviceName  = SystemInfo.deviceName.ToString() ;
 		graphicsMemorySize = SystemInfo.graphicsMemorySize.ToString() ;
-		#if !USE_OLD_UNITY
 		maxTextureSize = SystemInfo.maxTextureSize.ToString() ;
-		#endif
-		systemMemorySize = SystemInfo.systemMemorySize.ToString() ; 
-
+		systemMemorySize = SystemInfo.systemMemorySize.ToString() ;
 	}
 
 	void initializeStyle()
@@ -536,19 +507,19 @@ public class Reporter : MonoBehaviour {
 
 		GUISkin skin = images.reporterScrollerSkin ;
 		
-		toolbarScrollerSkin = (GUISkin)GameObject.Instantiate( skin );
+		toolbarScrollerSkin = Instantiate(skin);
 		toolbarScrollerSkin.verticalScrollbar.fixedWidth = 0f ;
 		toolbarScrollerSkin.horizontalScrollbar.fixedHeight = 0f ;
 		toolbarScrollerSkin.verticalScrollbarThumb.fixedWidth = 0f;
 		toolbarScrollerSkin.horizontalScrollbarThumb.fixedHeight = 0f;
 		
-		logScrollerSkin = (GUISkin)GameObject.Instantiate( skin );
+		logScrollerSkin = Instantiate( skin );
 		logScrollerSkin.verticalScrollbar.fixedWidth = size.x * 2f ;
 		logScrollerSkin.horizontalScrollbar.fixedHeight = 0f ;
 		logScrollerSkin.verticalScrollbarThumb.fixedWidth = size.x * 2f;
 		logScrollerSkin.horizontalScrollbarThumb.fixedHeight = 0f;
 		
-		graphScrollerSkin = (GUISkin)GameObject.Instantiate( skin );
+		graphScrollerSkin = Instantiate( skin );
 		graphScrollerSkin.verticalScrollbar.fixedWidth = 0f ;
 		graphScrollerSkin.horizontalScrollbar.fixedHeight = size.x * 2f ;
 		graphScrollerSkin.verticalScrollbarThumb.fixedWidth = 0f;
@@ -559,8 +530,6 @@ public class Reporter : MonoBehaviour {
 
 	void Start () {
 		logDate = System.DateTime.Now.ToString() ;
-		//StartCoroutine("readInfo");
-		
 	}
 	
 	//clear all logs
@@ -675,12 +644,12 @@ public class Reporter : MonoBehaviour {
 		if( selectedLog != null )
 		{
 			int newSelectedIndex = currentLog.IndexOf( selectedLog );
-			if( newSelectedIndex == -1 )
+			if( newSelectedIndex == -1 && logsDic.ContainsKey(selectedLog.condition, selectedLog.stacktrace))
 			{
 				Log collapsedSelected = logsDic[selectedLog.condition][selectedLog.stacktrace];
-				newSelectedIndex = currentLog.IndexOf( collapsedSelected );
-				if( newSelectedIndex != -1)
-					scrollPosition.y = newSelectedIndex * size.y ;
+				newSelectedIndex = currentLog.IndexOf(collapsedSelected);
+				if (newSelectedIndex != -1)
+					scrollPosition.y = newSelectedIndex * size.y;
 			}
 			else 
 			{
@@ -720,16 +689,16 @@ public class Reporter : MonoBehaviour {
 
 		GUI.skin = toolbarScrollerSkin ;
 		infoScrollPosition = GUILayout.BeginScrollView( infoScrollPosition ) ;
-		GUILayout.Space( size.x);
-		GUILayout.BeginHorizontal();
-		GUILayout.Space( size.x);
-		GUILayout.Box( buildFromContent ,nonStyle ,  GUILayout.Width(size.x) , GUILayout.Height(size.y));
-		GUILayout.Space( size.x);
-		GUILayout.Label( buildDate , nonStyle, GUILayout.Height(size.y));
-		GUILayout.FlexibleSpace();
-		GUILayout.EndHorizontal();
+        GUILayout.Space(size.x);
+        GUILayout.BeginHorizontal();
+        GUILayout.Space(size.x);
+        GUILayout.Box(buildFromContent, nonStyle, GUILayout.Width(size.x), GUILayout.Height(size.y));
+        GUILayout.Space(size.x);
+        GUILayout.Label(readInfo(), nonStyle, GUILayout.Height(size.y));
+        GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
 
-		GUILayout.BeginHorizontal();
+        GUILayout.BeginHorizontal();
 		GUILayout.Space( size.x);
 		GUILayout.Box( systemInfoContent ,nonStyle ,  GUILayout.Width(size.x) , GUILayout.Height(size.y));
 		GUILayout.Space( size.x);
@@ -945,42 +914,6 @@ public class Reporter : MonoBehaviour {
 		GUILayout.FlexibleSpace();
 		GUILayout.EndHorizontal();
 	}
-	void DrawReport()
-	{
-		screenRect.x = 0f ;
-		screenRect.y = 0f ;
-		screenRect.width = Screen.width ;
-		screenRect.height = Screen.height  ;
-		GUILayout.BeginArea( screenRect , backStyle );
-		GUILayout.BeginVertical();
-		GUILayout.FlexibleSpace();
-
-		GUILayout.BeginHorizontal();
-		GUILayout.FlexibleSpace();
-		GUILayout.Box( cameraContent ,nonStyle ,  GUILayout.Width(size.x) , GUILayout.Height(size.y));
-		GUILayout.FlexibleSpace();
-		GUILayout.Label( "Select Photo" , nonStyle , GUILayout.Height(size.y));
-		GUILayout.FlexibleSpace();
-		GUILayout.EndHorizontal();
-
-		GUILayout.BeginHorizontal();
-		GUILayout.Label( "Comming Soon", nonStyle , GUILayout.Height(size.y));
-		GUILayout.EndHorizontal();
-
-		GUILayout.BeginHorizontal();
-		GUILayout.FlexibleSpace();
-		if( GUILayout.Button( backContent ,barStyle ,  GUILayout.Width(size.x) , GUILayout.Height(size.y)))
-		{
-			currentView = ReportView.Logs ;
-		}
-		GUILayout.FlexibleSpace();
-		GUILayout.EndHorizontal();
-
-		GUILayout.FlexibleSpace();
-		GUILayout.EndVertical();
-		GUILayout.EndArea();
-	}
-
 	void drawToolBar(){
 
 		toolBarRect.x = 0f ;
@@ -1001,8 +934,23 @@ public class Reporter : MonoBehaviour {
 		GUILayout.BeginArea( toolBarRect );
 		toolbarScrollPosition = GUILayout.BeginScrollView( toolbarScrollPosition   );
 		GUILayout.BeginHorizontal(  barStyle );
-		
-		if( GUILayout.Button( clearContent,barStyle ,  GUILayout.Width(size.x*2) , GUILayout.Height(size.y*2)))
+		if (GUILayout.Button(closeContent, barStyle, GUILayout.Width(size.x * 2), GUILayout.Height(size.y * 2)))
+		{
+			show = false;
+			ReporterGUI gui = gameObject.GetComponent<ReporterGUI>();
+			DestroyImmediate(gui);
+
+			try
+			{
+				gameObject.SendMessage("OnHideReporter");
+				Root.Instance.Event.enabled = true;
+			}
+			catch (System.Exception e)
+			{
+				Debug.LogException(e);
+			}
+		}
+		if ( GUILayout.Button( clearContent,barStyle ,  GUILayout.Width(size.x*2) , GUILayout.Height(size.y*2)))
 		{
 			clear();
 		}
@@ -1072,10 +1020,12 @@ public class Reporter : MonoBehaviour {
 		{
 			currentView = ReportView.Info ;
 		}
-        if (GUILayout.Button(rayContent, barStyle, GUILayout.Width(size.x * 2), GUILayout.Height(size.y * 2)))
+        if (GUILayout.Button(rayContent, (canRay) ? buttonActiveStyle : barStyle, GUILayout.Width(size.x * 2), GUILayout.Height(size.y * 2)))
         {
-            EnableEventSystem();
-        }
+			canRay = !canRay;
+			if (GameObject.FindGameObjectWithTag("Root"))
+				Root.Instance.Event.enabled = canRay;
+		}
 
 
         GUILayout.FlexibleSpace();
@@ -1139,24 +1089,8 @@ public class Reporter : MonoBehaviour {
 			calculateCurrentLog();
 		}
 		GUILayout.EndHorizontal();
-		
-		if( GUILayout.Button(closeContent ,barStyle, GUILayout.Width(size.x*2) , GUILayout.Height(size.y*2)))
-		{
-			show = false;
-            ReporterGUI gui = gameObject.GetComponent<ReporterGUI>();
-			DestroyImmediate( gui );
-
-			try{
-				gameObject.SendMessage( "OnHideReporter" );
-			}
-			catch( System.Exception e ){
-				Debug.LogException( e );
-			}
-		}
-		
-		
 		GUILayout.EndHorizontal();
-		
+
 		GUILayout.EndScrollView();
 
 		GUILayout.EndArea();
@@ -1226,7 +1160,7 @@ public class Reporter : MonoBehaviour {
 				break;
 			}
 			
-			GUIContent content = null;
+			GUIContent content;
 			if( log.logType == _LogType.Log )
 				content = logContent ;
 			else if( log.logType == _LogType.Warning )
@@ -1237,10 +1171,7 @@ public class Reporter : MonoBehaviour {
 
 			GUIStyle currentLogStyle = ((startIndex +index)%2 == 0 )? evenLogStyle : oddLogStyle ;
 			if( log == selectedLog ){
-				//selectedLog = log ;
 				currentLogStyle = selectedLogStyle ;
-			}
-			else {
 			}
 
 			tempContent.text = log.count.ToString();
@@ -1583,7 +1514,8 @@ public class Reporter : MonoBehaviour {
 	}
 
 	void OnGUI () {
-		GUI.Label( new Rect(80, 0, 100, 20) , fpsText);// , lowerLeftFontStyle );
+		if (showFps)
+			GUI.Label(new Rect(80, 0, 100, 20), fpsText, lowerLeftFontStyle);	
 	}
 
 	public void OnGUIDraw()
@@ -1716,41 +1648,18 @@ public class Reporter : MonoBehaviour {
 	float lastClickTime = -1 ;
 	bool isDoubleClickDone()
 	{
-		if( Application.platform == RuntimePlatform.Android || 
-		   Application.platform == RuntimePlatform.IPhonePlayer )
+		if (Input.GetMouseButtonDown(0))
 		{
-			if( Input.touches.Length != 1 )
+			if (lastClickTime == -1)
+				lastClickTime = Time.realtimeSinceStartup;
+			else if (Time.realtimeSinceStartup - lastClickTime < 0.5f)
 			{
-				lastClickTime = -1 ;
+				lastClickTime = -1;
+				return true;
 			}
-			else 
+			else
 			{
-				if( Input.touches[0].phase == TouchPhase.Began ){
-					if( lastClickTime == -1 )
-						lastClickTime = Time.realtimeSinceStartup ;
-					else if( Time.realtimeSinceStartup - lastClickTime < 0.2f ){
-						lastClickTime = -1 ;
-						return true ;
-					}
-					else{
-						lastClickTime = Time.realtimeSinceStartup ;
-					}
-				}
-			}
-		}
-		else 
-		{
-			if( Input.GetMouseButtonDown(0))
-			{
-				if( lastClickTime == -1 )
-					lastClickTime = Time.realtimeSinceStartup ;
-				else if( Time.realtimeSinceStartup - lastClickTime < 0.2f ){
-					lastClickTime = -1 ;
-					return true ;
-				}
-				else{
-					lastClickTime = Time.realtimeSinceStartup ;
-				}
+				lastClickTime = Time.realtimeSinceStartup;
 			}
 		}
 		return false ;
@@ -1831,6 +1740,8 @@ public class Reporter : MonoBehaviour {
 
 		try{
 			gameObject.SendMessage( "OnShowReporter");
+			if (GameObject.FindGameObjectWithTag("Root"))
+				Root.Instance.Event.enabled = canRay;
 		}
 		catch(System.Exception e ){
 			Debug.LogException( e );
@@ -1852,16 +1763,19 @@ public class Reporter : MonoBehaviour {
 		{
 			doShow();
 		}
+		if (show && isDoubleClickDone())
+		{
+			doCopy();
+		}
 
-
-		if( threadedLogs.Count > 0 )
+		if ( threadedLogs.Count > 0 )
 		{
 			lock( threadedLogs )
 			{
 				for( int i = 0 ; i < threadedLogs.Count ; i++ )
 				{
 					Log l = threadedLogs[i];
-					AddLog( l.condition, l.stacktrace, (LogType)l.logType );
+					AddLog(l.condition, l.stacktrace, (LogType)l.logType, DateTime.Now.ToString("[HH:mm:ss] "));
 				}
 				threadedLogs.Clear();
 			}
@@ -1879,16 +1793,26 @@ public class Reporter : MonoBehaviour {
 		}
 	}
 
-
-	void CaptureLog (string condition, string stacktrace, LogType type)
-	{
-		AddLog(condition, stacktrace, type );
+	void doCopy()
+    {
+		if (selectedLog != null)
+        {
+			string content = Regex.Replace(selectedLog.condition, @"<\S*?>", "") + selectedLog.stacktrace;
+			GUIUtility.systemCopyBuffer = content;
+			selectedLog = null;
+		}
 	}
 
-	void AddLog( string condition, string stacktrace, LogType type )
+
+	//void CaptureLog (string condition, string stacktrace, LogType type)
+	//{
+	//	AddLog(condition, stacktrace, type );
+	//}
+
+	void AddLog(string condition, string stacktrace, LogType type, string time)
 	{
 		float memUsage = 0f ;
-		string _condition = "";
+		string _condition;
 		if( cachedString.ContainsKey( condition ) )
 		{
 			_condition = cachedString[ condition ];
@@ -1900,7 +1824,7 @@ public class Reporter : MonoBehaviour {
 			memUsage += (string.IsNullOrEmpty(_condition)?0:_condition.Length*sizeof(char));
 			memUsage += System.IntPtr.Size ;
 		}
-		string _stacktrace = "";
+		string _stacktrace;
 		if( cachedString.ContainsKey( stacktrace ) )
 		{
 			_stacktrace = cachedString[ stacktrace ];
@@ -1915,10 +1839,8 @@ public class Reporter : MonoBehaviour {
 		bool newLogAdded = false ;
 		
 		addSample();
-		Log log = new Log(){ logType = (_LogType)type , condition = _condition  , stacktrace = _stacktrace , sampleId = samples.Count -1  };
+		Log log = new Log(){ logType = (_LogType)type , condition = time + _condition  , stacktrace = _stacktrace , sampleId = samples.Count -1  };
 		memUsage += log.GetMemoryUsage() ;
-		//memUsage += samples.Count * 13 ;
-		
 		logsMemUsage += memUsage/1024/1024;
 		
 		if( TotalMemUsage > maxSize )
@@ -1927,10 +1849,10 @@ public class Reporter : MonoBehaviour {
 			Debug.Log( "Memory Usage Reach" + maxSize +" mb So It is Cleared");
 			return;
 		}
-		
-		bool isNew = false ;
-		//string key = _condition;// + "_!_" + _stacktrace ;
-		if( logsDic.ContainsKey( _condition ,stacktrace) )
+
+        bool isNew;
+        //string key = _condition;// + "_!_" + _stacktrace ;
+        if ( logsDic.ContainsKey( _condition ,stacktrace) )
 		{
 			isNew = false ;
 			logsDic[ _condition ][stacktrace].count ++;
@@ -1957,8 +1879,8 @@ public class Reporter : MonoBehaviour {
 			numOfLogsError++;
 		
 		
-		logs.Add( log );
-		if( !collapse || isNew )
+		logs.Add(log);
+		if ( !collapse || isNew )
 		{
 			bool skip = false ;
 			if( log.logType == _LogType.Log && !showLog )
@@ -1990,15 +1912,6 @@ public class Reporter : MonoBehaviour {
 			if( startIndex >= ( totalCount - totalVisibleCount ))
 				scrollPosition.y += size.y ;
 		}
-		
-		try
-		{
-			gameObject.SendMessage( "OnLog" ,log );
-		}
-		catch( System.Exception e )
-		{
-			Debug.LogException( e );
-		}
 	}
 
 	List<Log> threadedLogs = new List<Log>();
@@ -2007,7 +1920,8 @@ public class Reporter : MonoBehaviour {
 		Log log = new Log(){ condition = condition , stacktrace = stacktrace , logType = (_LogType)type };
 		lock( threadedLogs )
 		{
-			threadedLogs.Add( log );
+			threadedLogs.Add(log);
+			writeLog(log);
 		}
 	}
 	
@@ -2025,7 +1939,6 @@ public class Reporter : MonoBehaviour {
 	void OnApplicationQuit()
 	{
 		PlayerPrefs.SetInt( "Reporter_currentView" ,(int)currentView);
-		PlayerPrefs.SetInt( "Reporter_show" ,(show==true)?1:0);
 		PlayerPrefs.SetInt( "Reporter_collapse" ,(collapse==true)?1:0);
 		PlayerPrefs.SetInt( "Reporter_clearOnNewSceneLoaded" ,(clearOnNewSceneLoaded==true)?1:0);
 		PlayerPrefs.SetInt( "Reporter_showTime" ,(showTime==true)?1:0);
@@ -2048,39 +1961,52 @@ public class Reporter : MonoBehaviour {
 
 		PlayerPrefs.Save();
 	}
-	
-	//read build information 
-	IEnumerator readInfo(  )
+
+	private void OnDestroy()
 	{
-		string prefFile = "build_info.txt" ;
-		string url = prefFile;
-
-        if (prefFile.IndexOf("://") == -1)
+		if (writer != null)
         {
-            string streamingAssetsPath = Application.streamingAssetsPath;
-            if (streamingAssetsPath == "")
-                streamingAssetsPath = Application.dataPath + "/StreamingAssets/";
-            url = System.IO.Path.Combine(streamingAssetsPath, prefFile);
-        }
+			writer.Write("----------end----------");
+			writer.Dispose();
+		}	
+	}
+	//read build info (v1.0-v1.5)
+	string readInfo()
+	{
+		string fileName = "version.json";
+		string path = GameUtils.FileUtils.ins.getStreamingPath(true) + fileName;
+        var config = GameUtils.FileUtils.loadObjectFromJsonFile<Config>(path);
+        string buildDate = config.version + " -> ";
 
-        if (!url.Contains("://"))
-            url = "file://" + url;
+		path = GameUtils.FileUtils.ins.getPresistentPath(true) + fileName;
+        if (GameUtils.FileUtils.ins.isFileExist(path))
+        {
+			config = GameUtils.FileUtils.loadObjectFromJsonFile<Config>(path);
+			buildDate = buildDate + config.version;
+		}
+		return buildDate;
+	}
 
-        url = url.Replace("\\","/");
-       // float startTime = Time.realtimeSinceStartup;
-		WWW www = new WWW( url );
-		yield return www ;
-		
-		if( !string.IsNullOrEmpty( www.error ) )
+	private StreamWriter writer;
+	private StringBuilder build;
+	void writeLog(Log log)
+    {
+		if (writer == null)
 		{
-			Debug.LogError( www.error );
+			string path = Application.persistentDataPath + "/log.txt";
+			if (File.Exists(path))
+				File.Delete(path);
+			writer = new StreamWriter(path, true, Encoding.UTF8);
+			build = new StringBuilder();
 		}
-		else 
-		{
-			buildDate = www.text ;
-		}
-		
-		yield break;
+		build.Clear();
+		build.Append("[" + DateTime.Now.ToString() + "]");
+		if (log.logType == _LogType.Log)
+			build.Append(Regex.Replace(log.condition, @"<\S*?>", ""));
+		else
+			build.Append(Regex.Replace(log.condition, @"<\S*?>", "") + log.stacktrace);
+		build.Append("\n");
+		writer.Write(build.ToString());
 	}
 }
 

@@ -3,12 +3,13 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.IO.Compression;
 
 namespace GameUtils
 {
     public class EncryptUtil
     {
-        #region 加密方法一
+        #region 加密方法一 AES
         private static string myKey = "scerit";
         public static string AESEncrypt(string Data)
         {
@@ -73,7 +74,7 @@ namespace GameUtils
         }
         #endregion
 
-        #region 加密方法二
+        #region 加密方法二  字节取反
         public static byte[] Encrypt(byte[] bytes)
         {
             char[] key = myKey.ToCharArray();
@@ -92,28 +93,35 @@ namespace GameUtils
         }
         #endregion
 
-        #region 加密方法三
-        public static string StrEncode(string s)
+        #region 加密方法三 Base64
+        public static string Base64Encode(string source)
         {
-            byte[] data = Encoding.Unicode.GetBytes(s);
-            StringBuilder result = new StringBuilder(data.Length * 8);
-
-            foreach (byte b in data)
+            string encode = string.Empty;
+            byte[] bytes = Encoding.UTF8.GetBytes(source);
+            try
             {
-                result.Append(Convert.ToString(b, 2).PadLeft(8, '0'));
+                encode = Convert.ToBase64String(bytes);
             }
-            return result.ToString();
+            catch
+            {
+                encode = source;
+            }
+            return encode;
         }
 
-        public static string StrDecode(string s)
+        public static string Base64Decode(string result)
         {
-            CaptureCollection cs = Regex.Match(s, @"([01]{8})+").Groups[1].Captures;
-            byte[] data = new byte[cs.Count];
-            for (int i = 0; i < cs.Count; i++)
+            string decode = string.Empty;
+            byte[] bytes = Convert.FromBase64String(result);
+            try
             {
-                data[i] = Convert.ToByte(cs[i].Value, 2);
+                decode = Encoding.UTF8.GetString(bytes);
             }
-            return Encoding.Unicode.GetString(data, 0, data.Length);
+            catch
+            {
+                decode = result;
+            }
+            return decode;
         }
         #endregion
     }

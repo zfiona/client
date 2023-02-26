@@ -12,8 +12,7 @@ namespace NetExtension
         public int timeOut = 3;
         public Action<string, string> _onDone;
         static private string _token = null;
-
-        const string TOKEN_NAME = "Authorization";
+        const string TOKEN_NAME = "token";
 
         public HttpRequest() { }
         public HttpRequest(Action<string, string> action)
@@ -36,33 +35,19 @@ namespace NetExtension
             HttpMgr.Instance.StartRequestTask(IGet(url));
         }
 
-        public void Post(string url, LuaTable paras)
+        public void Post(string url, string jsonStr)
         {
-            Debug.Assert(!string.IsNullOrEmpty(url), "request url can't be null");
-            WWWForm form = new WWWForm();
-            if (paras != null)
-            {
-                Hashtable hsTable = paras.Cast<Hashtable>();
-                foreach (string key in hsTable.Keys)
-                    form.AddField(key, hsTable[key].ToString());
-            }
-            HttpMgr.Instance.StartRequestTask(IPost(url, form));
-        }
-        public void PostJson(string url, string jsonStr)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(url), "request url can't be null");
             HttpMgr.Instance.StartRequestTask(IPost(url, jsonStr));
         }
-        public void Post(string url, Dictionary<string, string> paras)
+        
+        public void Post(string url, LuaTable table)
         {
-            Debug.Assert(!string.IsNullOrEmpty(url), "request url can't be null");
-            WWWForm form = new WWWForm();
-            if (paras != null)
+            Dictionary<string, string> paras = new Dictionary<string, string>();
+            table.ForEach<string, object>((k,v) => 
             {
-                foreach (var v in paras)
-                    form.AddField(v.Key, v.Value);
-            }
-            HttpMgr.Instance.StartRequestTask(IPost(url, form));
+                paras.Add(k, v.ToString());
+            });
+            HttpMgr.Instance.StartRequestTask(IPost(url, paras));
         }
 
         public void Put(string url, byte[] body)
@@ -72,10 +57,10 @@ namespace NetExtension
         }
 
 
-        static public void SetToken(string token)
+        public void SetToken(string token)
         {
             _token = token;
-            //GameDebug.LogYellow("[setToken]：" + token);
+            GameDebug.LogYellow("[setToken]：" + token);
         }
 
         private class BypassCertificate : CertificateHandler
@@ -88,7 +73,7 @@ namespace NetExtension
 
         IEnumerator IGet(string url)
         {
-            GameDebug.LogYellow(url);
+            //GameDebug.LogYellow(url);
             using (UnityWebRequest uwr = UnityWebRequest.Get(url))
             {
                 uwr.timeout = timeOut;
@@ -101,6 +86,7 @@ namespace NetExtension
                 }
                   
                 yield return uwr.SendWebRequest();
+                url = url.Split('?')[0];
                 if (uwr.isHttpError || uwr.isNetworkError)
                 {
                     GameDebug.LogError(url + " : " + uwr.error);
@@ -114,9 +100,9 @@ namespace NetExtension
             HttpMgr.Instance.EndRequest();
         }
 
-        IEnumerator IPost(string url, WWWForm form)
+        IEnumerator IPost(string url,Dictionary<string, string> form)
         {
-            GameDebug.LogYellow(url);
+            //GameDebug.LogYellow(url);
             using (UnityWebRequest uwr = UnityWebRequest.Post(url, form))
             {
                 uwr.timeout = timeOut;
@@ -124,7 +110,7 @@ namespace NetExtension
                     uwr.certificateHandler = new BypassCertificate();
                 if (_token != null)
                     uwr.SetRequestHeader(TOKEN_NAME, _token);
-                uwr.SetRequestHeader("Content-Type", "application/json");
+                uwr.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                 yield return uwr.SendWebRequest();
                 if (uwr.isHttpError || uwr.isNetworkError)
                 {
@@ -141,8 +127,7 @@ namespace NetExtension
 
         IEnumerator IPost(string url, string json)
         {
-            if (!url.Contains("heartbeat"))
-                GameDebug.LogYellow(url);
+            //GameDebug.LogYellow(url);
             using (UnityWebRequest uwr = new UnityWebRequest(url, "POST"))
             {
                 uwr.timeout = timeOut;
@@ -150,15 +135,14 @@ namespace NetExtension
                     uwr.certificateHandler = new BypassCertificate();
                 if (_token != null)
                     uwr.SetRequestHeader(TOKEN_NAME, _token);
+                uwr.SetRequestHeader("Content-Type", "application/json");
                 if (!string.IsNullOrEmpty(json))
                 {
                     byte[] postBytes = System.Text.Encoding.UTF8.GetBytes(json);
                     uwr.uploadHandler = new UploadHandlerRaw(postBytes);
-                    uwr.SetRequestHeader("Content-Type", "application/json");
                 }
 
                 uwr.downloadHandler = new DownloadHandlerBuffer();
-
                 yield return uwr.SendWebRequest();
 
                 if (uwr.isHttpError || uwr.isNetworkError)
@@ -177,7 +161,7 @@ namespace NetExtension
 
         IEnumerator IPut(string url, byte[] body)
         {
-            GameDebug.LogYellow(url);
+            //GameDebug.LogYellow(url);
             using (UnityWebRequest uwr = UnityWebRequest.Put(url, body))
             {
                 uwr.timeout = timeOut;

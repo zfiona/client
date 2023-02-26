@@ -6,11 +6,11 @@ using System;
 public class LuaTableCell : ScrollableCell
 {
     LuaTable _target;
-    private Action<LuaTable> _luaInit;
+    private Action<LuaTable,string> _luaInit;
     private Action<LuaTable,int> _luaUpdate;
     private Action<LuaTable> _luaClean;
 
-    public void Init(LuaTable cls)
+    public void Init(LuaTable cls,string root)
     {
         Debug.Assert(cls != null, "LuaTableCell.Init target can't be null");
         try
@@ -30,13 +30,16 @@ public class LuaTableCell : ScrollableCell
         {
             throw e;
         }
-        _luaInit?.Invoke(_target);
+        _luaInit?.Invoke(_target, root);
     }
 
     public override void ConfigureCellData()
     {
         //lua table begin 1
         _luaUpdate?.Invoke(_target, DataIndex+1);
+#if UNITY_EDITOR
+        transform.name = "item " + (DataIndex + 1);
+#endif
     }
 
     public override void CleanData()

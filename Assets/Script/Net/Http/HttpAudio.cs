@@ -9,7 +9,7 @@ namespace NetExtension
 {
     public class HttpAudio
     {
-        private const string _CACHE = "AudioCache";
+        private const string _CACHE = "audioCache";
         private static string cachePath = Application.persistentDataPath + "/" + _CACHE + "/";
         public static int timeOut = 5;
 
@@ -28,6 +28,11 @@ namespace NetExtension
                 Directory.Delete(cachePath, true);
             }
             Directory.CreateDirectory(cachePath);
+        }
+
+        public static string GetRootPath()
+        {
+            return cachePath;
         }
 
         //MPEG适合长背景音,WAV适合短音效

@@ -6,8 +6,11 @@ apply plugin: 'com.android.library'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'com.facebook.android:facebook-android-sdk:12.2.0'
-    implementation 'com.android.billingclient:billing:4.0.0'
+	implementation 'com.aliyun.dpa:oss-android-sdk:2.9.12'
+    //implementation 'com.facebook.android:facebook-android-sdk:12.3.0'
+    //implementation 'com.android.billingclient:billing:4.0.0'
+	implementation 'com.soundcloud.android.crop:lib_crop:1.0.0' //裁剪界面
+    implementation 'com.darsh.multipleimageselect:multipleimageselect:1.0.5'//多图选择界面
 **DEPS**}
 
 android {

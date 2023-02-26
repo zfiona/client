@@ -1470,6 +1470,7 @@ namespace CSObjectWrapEditor
 
             BlackList = new List<List<string>>()
             {
+                new List<string>(){"UnityEngine.Input","location"}  //去掉定位权限
             };
 
             HotfixCfg = new Dictionary<Type, HotfixFlag>();

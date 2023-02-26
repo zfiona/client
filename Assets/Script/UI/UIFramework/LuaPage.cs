@@ -8,6 +8,7 @@ public class LuaPage : Page
     private Action<LuaTable> _luaAwake;
     private Action<LuaTable> _luaRefresh;
     private Action<LuaTable, bool> _luaHide;
+    private static bool stretchBg = false;
 
     public LuaPage(LuaTable target, string uiPath, UIType type,UIAnim pop) :
         base(uiPath,type, pop)

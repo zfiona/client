@@ -1,9 +1,10 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using GameUtils;
+using System.Collections.Generic;
 
 public class BuildHelper
 {
@@ -24,13 +25,6 @@ public class BuildHelper
         }
     }
 
-    [MenuItem("Tools/test", false, 12)]
-    static void teset()
-    {
-
-    }
-
-
     [MenuItem("Tools/Build/Setting", false, 10)]
     static void Set()
     {
@@ -47,54 +41,57 @@ public class BuildHelper
         }
     }
 
-    [MenuItem("Tools/Build/set abName", false, 99)]
-    static void CreateAbName()
-    {
-        string path = "Art/hall/spine";
-        string abName = "hall_spine";
-        SetAssetBundlesName(Path.Combine(Application.dataPath, path), abName);
-
-        Debug.Log("set ok");
-    }
-
-    static void SetAssetBundlesName(string dirPath, string _abName)
-    {
-        DirectoryInfo dir = new DirectoryInfo(dirPath);
-        FileSystemInfo[] files = dir.GetFileSystemInfos();
-
-        for (int i = 0; i < files.Length; i++)
-        {
-            if (files[i] is DirectoryInfo)
-            {
-                SetAssetBundlesName(files[i].FullName, _abName);
-            }
-            else if (!files[i].Name.EndsWith(".meta"))
-            {
-
-                string assetPath = files[i].FullName;
-                string importerPath = "Assets" + assetPath.Substring(Application.dataPath.Length);
-                AssetImporter assetImporter = AssetImporter.GetAtPath(importerPath);
-                assetImporter.assetBundleName = _abName;
-            }
-        }
-    }
-
-
-    [MenuItem("Tools/Build/clear abName", false, 100)]
+    [MenuItem("Tools/Build/Clear Assetbundles Name", false, 100)]
     static void ClearAllAbName()
     {
-        //获取所有的AssetBundle名称
-        string[] abNames = AssetDatabase.GetAllAssetBundleNames();
-
-        //强制删除所有AssetBundle名称
-        for (int i = 0; i < abNames.Length; i++)
+        Object[] selObj = Selection.GetFiltered(typeof(Object), SelectionMode.Unfiltered);
+        foreach (Object item in selObj)
         {
-            AssetDatabase.RemoveAssetBundleName(abNames[i], true);
+            string objPath = AssetDatabase.GetAssetPath(item);
+            List<string> selectedPicsPathList = new List<string>();
+            if (!Directory.Exists(objPath))
+                selectedPicsPathList.Add(objPath);
+            else
+                selectedPicsPathList = GetFilesRecursively(objPath);
+            
+            for (int i = 0; i < selectedPicsPathList.Count; i++)
+            {
+                string filePath = selectedPicsPathList[i];
+                AssetImporter ai = AssetImporter.GetAtPath(filePath);
+                ai.assetBundleName = null;
+                EditorUtility.DisplayProgressBar("清除AssetBundle", filePath, 1f * i / selectedPicsPathList.Count);
+            }
         }
         AssetDatabase.Refresh();
-        Debug.Log("清除Meta配置文件完成");
+        EditorUtility.ClearProgressBar();
+        Debug.Log("清除AssetBundle完成");
     }
-    [MenuItem("Tools/Build/clear packingTag", false, 101)]
+    static List<string> GetFilesRecursively(string folder)
+    {
+        List<string> tar = new List<string>();
+        string[] dirs = Directory.GetFileSystemEntries(folder);
+        for (int j = 0; j < dirs.Length; j++)
+        {
+            string tarPath = dirs[j];
+            if (Directory.Exists(tarPath))
+            {
+                tar.AddRange(GetFilesRecursively(tarPath));
+            }
+            if (File.Exists(tarPath))
+            {
+                if (tarPath.EndsWith("meta") || string.IsNullOrEmpty(tarPath))
+                    continue;
+                else
+                {
+                    if (!tar.Contains(tarPath))
+                        tar.Add(tarPath);
+                }
+            }
+        }
+        return tar;
+    }
+
+    [MenuItem("Tools/Build/Clear Atlas Name", false, 101)]
     static void ClearPackingTag()
     {
         string path = Application.dataPath + "/Art/hall/image";
@@ -111,10 +108,10 @@ public class BuildHelper
             }
         }
         AssetDatabase.Refresh();
-        Debug.Log("清除packingTag完成");
+        Debug.Log("清除Atlas完成");
     }
 
-    [MenuItem("Tools/Build/insert keystore", false, 102)]
+    [MenuItem("Tools/Build/Insert keystore", false, 102)]
     static void InsertKeystore()
     {
         Setting setting = FileUtils.loadObjectFromJsonFile<Setting>(Setting.settingPath());
@@ -124,7 +121,7 @@ public class BuildHelper
         PlayerSettings.Android.keyaliasPass = setting.keyalipass;
     }
 
-    [MenuItem("Tools/Build/Make assetbundles")]
+    [MenuItem("Tools/Build/Make Assetbundles")]
     static void MakeAssetBundles()
     {
         MakeAssetBundles(false, EditorUserBuildSettings.activeBuildTarget, FileUtils.ins.getStreamingPath(false));
@@ -163,6 +160,23 @@ public class BuildHelper
     static void InjectLua()
     {
 
+    }
+
+    [MenuItem("Tools/Build/Gen Package")]
+    static void GenPackage()
+    {
+#if UNITY_ANDROID
+        string path = Application.dataPath.Replace("Assets", "im.apk");
+        TryGenApk(path);
+#endif
+    }
+    public static void TryGenApk(string outPath)
+    {
+        BuildTarget target = BuildTarget.Android;
+        BuildOptions options = BuildOptions.CompressWithLz4;
+        string[] outScenes = new string[] { "Assets/Scene/main.unity" };
+        BuildPipeline.BuildPlayer(outScenes, outPath,target, options);
+        Debug.Log("生成apk成功");
     }
 
     public static void MakeLuaFiles()

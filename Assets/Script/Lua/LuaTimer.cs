@@ -53,6 +53,7 @@ namespace XLua
 		static float nowTime;
 		static Dictionary<int, Timer> mapSnTimer;
 		static LinkedList<Timer> executeTimers;
+		static bool is_pause = false;
 
 		static int intpow(int n, int m)
 		{
@@ -102,6 +103,7 @@ namespace XLua
 
 		internal static void tick(float deltaTime)
 		{
+			if (is_pause) return;
 			nowTime += deltaTime;
 			pileSecs += deltaTime;
 			int cycle = 0;
@@ -245,6 +247,11 @@ namespace XLua
 				innerDel(t.Value, false);
 			}
 			mapSnTimer.Clear();
+		}
+
+		public static void Pause(bool isPause)
+        {
+			is_pause = isPause;
 		}
 	}
 }

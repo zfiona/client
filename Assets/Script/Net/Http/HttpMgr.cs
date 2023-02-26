@@ -18,7 +18,7 @@ namespace NetExtension
             {
                 if (instance == null)
                 {
-                    instance = new GameObject("HttpMgr").AddComponent<HttpMgr>();
+                    instance = GameObject.Find(AppConst.SingleObj).TryGetComponent<HttpMgr>();
                 }
                 return instance;
             }

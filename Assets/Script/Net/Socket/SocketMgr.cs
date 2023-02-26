@@ -21,6 +21,13 @@ namespace NetExtension
             cmd = m_id;
             buffer = b;
         }
+        public NetData() { }
+        public NetData SetData(short m_id, byte[] b)
+        {
+            cmd = m_id;
+            buffer = b;
+            return this;
+        }
     }
 
     public class SocketMgr : MonoBehaviour

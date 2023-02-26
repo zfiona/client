@@ -13,6 +13,9 @@ using XLua;
 using System.Reflection;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.Events;
+using UnityEngine.EventSystems;
+using UnityEngine.Playables;
 //using System.Reflection;
 //using System.Linq;
 
@@ -56,7 +59,10 @@ public static class ExampleGenConfig
                 typeof(Animator),
                 typeof(AnimationCurve),
                 typeof(AnimationClip),
+                typeof(ParticleSystemRenderer),
                 typeof(AudioSource),
+                typeof(Camera),       
+
                 //UnityEngine.UI
                 typeof(Canvas),
                 typeof(RectTransform),
@@ -84,39 +90,52 @@ public static class ExampleGenConfig
                 typeof(VerticalLayoutGroup),
                 typeof(HorizontalLayoutGroup),
                 typeof(HorizontalOrVerticalLayoutGroup),
+                typeof(HorizontalWrapMode),
+                typeof(Animator),
+                typeof(AnimatorStateInfo),
+                typeof(RuntimeAnimatorController),
+                typeof(AnimationClip),
+                typeof(Input),
+                typeof(ScrollView),
+                typeof(ScrollRect),
+                typeof(ScrollView.ScrollRenderEvent),
+                typeof(UnityEvent<int, Transform>),
+                typeof(Button.ButtonClickedEvent),
+                typeof(Toggle.ToggleEvent),
+                typeof(InputField.SubmitEvent),
+                typeof(PointerEventData),
+                //UnityEngine.UIModule
+                typeof(CanvasGroup),
+                //UnityEngine.DirectorModule
+                typeof(PlayableDirector),
             };
 
 
     //C#静态调用Lua的配置（包括事件的原型），仅可以配delegate，interface
     [CSharpCallLua]
     public static List<Type> CSharpCallLua = new List<Type>() {
-                typeof(UnityEngine.Events.UnityAction),
-                typeof(System.Collections.IEnumerator)
-            };
+        typeof(UnityAction),
+        typeof(UnityAction<bool>),
+        typeof(Func<bool>), //协程waitUntil
+        typeof(Action<LuaTable,string,PointerEventData>),
+        typeof(System.Collections.IEnumerator)
+    };
 
     //黑名单
     [BlackList]
     public static List<List<string>> BlackList = new List<List<string>>()  
     {
         new List<string>(){"System.Xml.XmlNodeList", "ItemOf"},
-        new List<string>(){"UnityEngine.WWW", "movie"},
-    #if UNITY_WEBGL
-        new List<string>(){"UnityEngine.WWW", "threadPriority"},
-    #endif
-        new List<string>(){ "UnityEngine.UI.Text", "OnRebuildRequested" },
+        new List<string>(){"UnityEngine.UI.Text", "OnRebuildRequested" },
         new List<string>(){"UnityEngine.Texture2D", "alphaIsTransparency"},
         new List<string>(){"UnityEngine.Security", "GetChainOfTrustValue"},
         new List<string>(){"UnityEngine.CanvasRenderer", "onRequestRebuild"},
         new List<string>(){"UnityEngine.Light", "areaSize"},
         new List<string>(){"UnityEngine.Light", "lightmapBakeType"},
-        new List<string>(){"UnityEngine.WWW", "MovieTexture"},
-        new List<string>(){"UnityEngine.WWW", "GetMovieTexture"},
         new List<string>(){"UnityEngine.AnimatorOverrideController", "PerformOverrideClipListCleanup"},
     #if !UNITY_WEBPLAYER
         new List<string>(){"UnityEngine.Application", "ExternalEval"},
     #endif
-        new List<string>(){"UnityEngine.GameObject", "networkView"}, //4.6.2 not support
-        new List<string>(){"UnityEngine.Component", "networkView"},  //4.6.2 not support
         new List<string>(){"System.IO.FileInfo", "GetAccessControl", "System.Security.AccessControl.AccessControlSections"},
         new List<string>(){"System.IO.FileInfo", "SetAccessControl", "System.Security.AccessControl.FileSecurity"},
         new List<string>(){"System.IO.DirectoryInfo", "GetAccessControl", "System.Security.AccessControl.AccessControlSections"},
@@ -124,6 +143,8 @@ public static class ExampleGenConfig
         new List<string>(){"System.IO.DirectoryInfo", "CreateSubdirectory", "System.String", "System.Security.AccessControl.DirectorySecurity"},
         new List<string>(){"System.IO.DirectoryInfo", "Create", "System.Security.AccessControl.DirectorySecurity"},
         new List<string>(){"UnityEngine.MonoBehaviour", "runInEditMode"},
+        new List<string>() {"UnityEngine.Input", "IsJoystickPreconfigured", "System.String" },
+        new List<string>(){ "UnityEngine.ParticleSystemRenderer", "supportsMeshInstancing" }
     };
 #if UNITY_2018_1_OR_NEWER
     [BlackList]

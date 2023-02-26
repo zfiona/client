@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using UnityEngine;
 using GameUtils;
+using System.Collections.Generic;
 
 public enum BuildPlatform
 {
@@ -21,13 +22,20 @@ public class Setting
     public ResPath resPath { get; set; }
     //打包信息
     public BuildPlatform buildTarget { get; set; }
-    public string buildPath { get; set; }
-    public bool isABHash { get; set; }
-    public bool delManifest { get; set; }
+
+    public List<string> outPaths { get; set; }//出包地址
+    public List<string> assetUrls { get; set; }//资源地址
+    public List<string> apiUrls { get; set; } //api地址
+    public bool createAllZone { get; set; } //全地址打包
+    //打包配置
+    //public bool isABHash { get; set; }
+    //public bool delManifest { get; set; }
+    public bool chgAppName { get; set; }
     public bool createAssets { get; set; }
-    //工程运行信息
-    public bool isLuaZip { get; set; }
-    //打包签名
+    public bool genPackage { get; set; }
+
+    //打包设置
+    public string appName { get; set; }
     public string keystore { get; set; }
     public string keypass { get; set; }
     public string keyaliname { get; set; }
@@ -53,7 +61,6 @@ public class Setting
             m_setting = FileUtils.loadObjectFromJsonFile<Setting>(settingPath());
 #else
             m_setting = new Setting();
-            m_setting.isLuaZip = true;
             m_setting.resPath = ResPath.PersistentData;
 #endif
         }
